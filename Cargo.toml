@@ -1,0 +1,10 @@
+[package]
+name = "rustrace"
+version = "0.1.0"
+authors = ["Mason Clayton <masongclayton@gmail.com>"]
+
+[[bin]]
+name = "rustrace"
+
+[dependencies]
+image = "*"
