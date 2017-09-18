@@ -7,4 +7,5 @@ authors = ["Mason Clayton <masongclayton@gmail.com>"]
 name = "rustrace"
 
 [dependencies]
+num = "*"
 image = "*"
