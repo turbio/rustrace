@@ -9,13 +9,14 @@ pub struct Ray {
 impl Drawable for Ray {
     fn render(&self, target: &mut Screen) {
         let (x1, y1) = target.project(&self.point);
-        let (x2, y2) = target.project(&self.point.sub(&self.direction));
-
+        let (x2, y2) = target.project(&self.direction.add(&self.point));
         let color = [255, 0, 0];
 
-        target.put(x + 1, y, color);
-        target.put(x, y + 1, color);
-        target.put(x + 1, y + 1, color);
+        target.line(x1, y1, x2, y2, color);
+
+        target.put(x1 + 1, y1, color);
+        target.put(x1, y1 + 1, color);
+        target.put(x1 + 1, y1 + 1, color);
     }
 
     //fn render(&self, target: &mut Screen) {

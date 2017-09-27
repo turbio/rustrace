@@ -17,7 +17,7 @@ impl Drawable for Vec2 {
 }
 
 impl Vec2 {
-    pub fn add(&self, v: Vec2) -> Vec2 {
+    pub fn add(&self, v: &Vec2) -> Vec2 {
         Vec2 {
             x: self.x + v.x,
             y: self.y + v.y,
@@ -25,7 +25,7 @@ impl Vec2 {
     }
 
     pub fn lerp(&self, v: &Vec2, s: f64) -> Vec2 {
-        self.scale(1f64 - s).add(v.scale(s))
+        self.scale(1f64 - s).add(&v.scale(s))
     }
 
 

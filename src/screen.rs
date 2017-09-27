@@ -35,7 +35,36 @@ impl Screen {
         )
     }
 
-    pub fn line(&mut self, v1: Vec2, v2: Vec2) {}
+    pub fn line(&mut self, x1: isize, y1: isize, x2: isize, y2: isize, c: [u8; 3]) {
+        let x_from;
+        let y_from;
+        let x_to;
+        let y_to;
+
+        if x1 < x2 {
+            x_from = x1;
+            x_to = x2;
+            y_from = y1;
+            y_to = y2;
+        } else {
+            x_from = x2;
+            x_to = x1;
+            y_from = y2;
+            y_to = y1;
+        }
+
+        let dx = x_to - x_from;
+        let dy = y_to - y_from;
+
+        for x in x_from..(x_to + 1) {
+            if dx == 0 {
+                continue;
+            }
+
+            let y = y_from + dy * (x - x_from) / dx;
+            self.put(x, y, c);
+        }
+    }
 
     pub fn draw(&mut self, d: &Drawable) {
         d.render(self)
