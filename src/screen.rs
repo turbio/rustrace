@@ -41,29 +41,58 @@ impl Screen {
         let x_to;
         let y_to;
 
-        if x1 < x2 {
-            x_from = x1;
-            x_to = x2;
-            y_from = y1;
-            y_to = y2;
-        } else {
-            x_from = x2;
-            x_to = x1;
-            y_from = y2;
-            y_to = y1;
-        }
-
-        let dx = x_to - x_from;
-        let dy = y_to - y_from;
-
-        for x in x_from..(x_to + 1) {
-            if dx == 0 {
-                continue;
+        if (x1 - x2).abs() > (y1 - y2).abs() {
+            if x1 < x2 {
+                x_from = x1;
+                x_to = x2;
+                y_from = y1;
+                y_to = y2;
+            } else {
+                x_from = x2;
+                x_to = x1;
+                y_from = y2;
+                y_to = y1;
             }
 
-            let y = y_from + dy * (x - x_from) / dx;
-            self.put(x, y, c);
+
+            let dx = x_to - x_from;
+            let dy = y_to - y_from;
+
+            for x in x_from..(x_to + 1) {
+                if dx == 0 {
+                    continue;
+                }
+
+                let y = y_from + dy * (x - x_from) / dx;
+                self.put(x, y, c);
+            }
+        } else {
+            if y1 < y2 {
+                x_from = x1;
+                x_to = x2;
+                y_from = y1;
+                y_to = y2;
+            } else {
+                x_from = x2;
+                x_to = x1;
+                y_from = y2;
+                y_to = y1;
+            }
+
+
+            let dx = x_to - x_from;
+            let dy = y_to - y_from;
+
+            for y in y_from..(y_to + 1) {
+                if dy == 0 {
+                    continue;
+                }
+
+                let x = x_from + dx * (y - y_from) / dy;
+                self.put(x, y, c);
+            }
         }
+
     }
 
     pub fn draw(&mut self, d: &Drawable) {

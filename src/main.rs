@@ -3,12 +3,14 @@ mod vec2;
 mod imageplane;
 mod cam;
 mod ray;
+mod circle;
 
 use screen::Screen;
 use vec2::Vec2;
 use imageplane::ImagePlane;
 use cam::Cam;
 use ray::Ray;
+use circle::Circle;
 
 fn main() {
     let mut screen = Screen::new(600, 600);
@@ -22,8 +24,8 @@ fn main() {
 
     let c = Cam {
         pos: Vec2 {
-            x: 0.5f64 as f64,
-            y: 0.96f64 as f64,
+            x: 0.5f64,
+            y: 0.98f64,
         },
     };
     screen.draw(&c);
@@ -40,6 +42,12 @@ fn main() {
         };
         screen.draw(&r);
     }
+
+    let c = Circle {
+        center: Vec2 { x: 0f64, y: 0f64 },
+        radius: 0.25f64,
+    };
+    screen.draw(&c);
 
     screen.push("output.png");
 }
