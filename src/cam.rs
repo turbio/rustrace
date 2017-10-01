@@ -6,7 +6,9 @@ pub struct Cam {
 }
 
 impl Drawable for Cam {
-    fn render(&self, target: &mut Screen) {
+    fn render(&self) -> Screen {
+        let mut target = Screen::new();
+
         let (x, y) = target.project(&self.pos);
         // ##p##
         // #   #
@@ -57,5 +59,7 @@ impl Drawable for Cam {
         target.put(x, y + 7, [0, 0, 0]);
         target.put(x + 1, y + 7, [0, 0, 0]);
         target.put(x + 2, y + 7, [0, 0, 0]);
+
+        target
     }
 }

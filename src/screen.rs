@@ -1,27 +1,27 @@
 extern crate image;
 
-use self::image::{ImageBuffer, Rgb};
+use self::image::{ImageBuffer, Rgba};
 use vec2::Vec2;
+use color::Color;
 
 pub struct Screen {
     pub width: u32,
     pub height: u32,
-    image: ImageBuffer<Rgb<u8>, Vec<u8>>,
+    image: ImageBuffer<Rgba<u8>, Vec<u8>>,
 }
 
 impl Screen {
-    pub fn new(w: u32, h: u32) -> Screen {
-        Screen {
-            image: ImageBuffer::<Rgb<u8>, Vec<u8>>::new(w, h),
+    pub fn new() -> Screen {
+        let w = 600;
+        let h = 600;
+
+        let screen = Screen {
+            image: ImageBuffer::<Rgba<u8>, Vec<u8>>::new(w, h),
             width: w,
             height: h,
-        }
-    }
+        };
 
-    pub fn put(&mut self, x: isize, y: isize, c: [u8; 3]) {
-        if x < self.width as isize && y < self.height as isize && x > 0 && y > 0 {
-            self.image.get_pixel_mut(x as u32, y as u32).data = c;
-        }
+        screen
     }
 
     pub fn push(&self, to: &str) {
@@ -35,7 +35,52 @@ impl Screen {
         )
     }
 
-    pub fn line(&mut self, x1: isize, y1: isize, x2: isize, y2: isize, c: [u8; 3]) {
+    pub fn project_x(&self, x: f64) -> isize {
+        (x * self.width as f64) as isize
+    }
+
+    pub fn as_color(&self, color: &Color) -> Screen {
+        let to_color = color.rgb();
+
+        let mut target = Screen::new();
+
+        for (x, y, p) in self.image.enumerate_pixels() {
+            let tp = target.image.get_pixel_mut(x, y);
+            if p[3] > 0 {
+                tp[0] = to_color[0];
+                tp[1] = to_color[1];
+                tp[2] = to_color[2];
+                tp[3] = p[3];
+            }
+        }
+
+        target
+    }
+
+    pub fn put(&mut self, x: isize, y: isize, c: [u8; 3]) {
+        if x < self.width as isize && y < self.height as isize && x > 0 && y > 0 {
+            self.image.put_pixel(
+                x as u32,
+                y as u32,
+                Rgba([c[0], c[1], c[2], 255]),
+            )
+        }
+    }
+
+    pub fn put_screen(&mut self, screen: &Screen) {
+        for (x, y, p) in self.image.enumerate_pixels_mut() {
+            let source = screen.image.get_pixel(x, y);
+
+            if source[3] > 0 {
+                p[0] = source[0];
+                p[1] = source[1];
+                p[2] = source[2];
+                p[3] = 255;
+            }
+        }
+    }
+
+    pub fn put_line(&mut self, x1: isize, y1: isize, x2: isize, y2: isize, c: [u8; 3]) {
         let x_from;
         let y_from;
         let x_to;
@@ -92,14 +137,9 @@ impl Screen {
                 self.put(x, y, c);
             }
         }
-
-    }
-
-    pub fn draw(&mut self, d: &Drawable) {
-        d.render(self)
     }
 }
 
 pub trait Drawable {
-    fn render(&self, &mut Screen);
+    fn render(&self) -> Screen;
 }

@@ -1,69 +1,53 @@
 use vec2::Vec2;
 use screen::{Screen, Drawable};
+use color::Color;
 
+#[derive(Clone)]
 pub struct ImagePlane {
-    pix: Vec<[u8; 3]>,
+    pix: Vec<Color>,
     x1: Vec2,
     x2: Vec2,
 }
 
 impl ImagePlane {
-    pub fn new() -> ImagePlane {
-        ImagePlane {
-            pix: vec![
-                [50, 50, 50],
-                [100, 100, 100],
-                [150, 150, 150],
-                [205, 205, 205],
-                [50, 50, 50],
-                [100, 100, 100],
-                [150, 150, 150],
-                [205, 205, 205],
-                [50, 50, 50],
-                [100, 100, 100],
-                [150, 150, 150],
-                [205, 205, 205],
-                [50, 50, 50],
-                [100, 100, 100],
-                [150, 150, 150],
-                [205, 205, 205],
-                [50, 50, 50],
-                [100, 100, 100],
-                [150, 150, 150],
-                [205, 205, 205],
-                [50, 50, 50],
-                [100, 100, 100],
-                [150, 150, 150],
-                [205, 205, 205],
-                [50, 50, 50],
-                [100, 100, 100],
-                [150, 150, 150],
-                [205, 205, 205],
-                [50, 50, 50],
-                [100, 100, 100],
-                [150, 150, 150],
-                [205, 205, 205],
-                [50, 50, 50],
-                [100, 100, 100],
-                [150, 150, 150],
-                [205, 205, 205],
-                [50, 50, 50],
-                [100, 100, 100],
-                [150, 150, 150],
-                [205, 205, 205],
-                [50, 50, 50],
-                [100, 100, 100],
-                [150, 150, 150],
-            ],
-            x1: Vec2 {
-                x: 0.05f64 as f64,
-                y: 0.5f64 as f64,
-            },
-            x2: Vec2 {
-                x: 0.95f64 as f64,
-                y: 0.5f64 as f64,
-            },
+    pub fn new(size: usize, x1: Vec2, x2: Vec2) -> ImagePlane {
+
+        let mut p = Vec::new();
+        for i in 0..size {
+            let c = if i % 3 == 0 {
+
+                Color {
+                    r: 1.0f64,
+                    g: 0.0f64,
+                    b: 0.0f64,
+                }
+            } else if i % 3 == 1 {
+                Color {
+                    r: 0.0f64,
+                    g: 1.0f64,
+                    b: 0.0f64,
+                }
+            } else {
+
+                Color {
+                    r: 0.0f64,
+                    g: 0.0f64,
+                    b: 1.0f64,
+                }
+            };
+
+            p.push(c)
         }
+
+        ImagePlane {
+            pix: p,
+            x1: x1,
+            x2: x2,
+        }
+    }
+
+    pub fn put(&mut self, at: usize, c: Color) {
+        self.pix[at] = c;
     }
 
     pub fn pxls(&self) -> usize {
@@ -80,7 +64,9 @@ impl ImagePlane {
 }
 
 impl Drawable for ImagePlane {
-    fn render(&self, target: &mut Screen) {
+    fn render(&self) -> Screen {
+        let mut target = Screen::new();
+
         let (x1, y1) = target.project(&self.x1);
         let (x2, y2) = target.project(&self.x2);
 
@@ -107,13 +93,16 @@ impl Drawable for ImagePlane {
                 at = self.pix.len() - 1;
             }
 
-            let color = self.pix[at];
+            let color = &self.pix[at];
 
             let y = y_from + dy * (x - x_from) / dx;
-            target.put(x, y, color);
-            target.put(x, y + 1, color);
-            target.put(x, y + 2, color);
-            target.put(x, y + 3, color);
+            target.put(x, y, color.rgb());
+            target.put(x, y + 1, color.rgb());
+            target.put(x, y + 2, color.rgb());
+            target.put(x, y + 3, color.rgb());
+
         }
+
+        target
     }
 }

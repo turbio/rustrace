@@ -1,4 +1,5 @@
 use screen::{Screen, Drawable};
+use std::f64;
 
 #[derive(Clone)]
 pub struct Vec2 {
@@ -7,12 +8,16 @@ pub struct Vec2 {
 }
 
 impl Drawable for Vec2 {
-    fn render(&self, target: &mut Screen) {
+    fn render(&self) -> Screen {
+        let mut target = Screen::new();
+
         let (x, y) = target.project(self);
         target.put(x, y, [0, 0, 0]);
         target.put(x + 1, y, [0, 0, 0]);
         target.put(x, y + 1, [0, 0, 0]);
         target.put(x + 1, y + 1, [0, 0, 0]);
+
+        target
     }
 }
 
@@ -41,6 +46,14 @@ impl Vec2 {
             x: self.x * s,
             y: self.y * s,
         }
+    }
+
+    pub fn dot(&self, v: &Vec2) -> f64 {
+        (self.x * v.x) + (self.y * v.y)
+    }
+
+    pub fn len(&self) -> f64 {
+        (self.x.powi(2) + self.y.powi(2)).sqrt()
     }
 
     //fn mult(&self, v: Vec2) -> Vec2 {
