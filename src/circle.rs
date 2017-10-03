@@ -59,7 +59,7 @@ impl Trace for Circle {
         self.material.clone()
     }
 
-    fn intersect(&self, ray: &Ray) -> Option<f64> {
+    fn intersect(&self, ray: &Ray) -> Option<(f64, Vec2)> {
         let ray_to_self = ray.point.sub(&self.center);
 
         let a = ray.direction.len().powi(2);
@@ -82,6 +82,10 @@ impl Trace for Circle {
             return None;
         }
 
-        return Some(t);
+        let intersect_at = ray.point.add(&ray.direction.scale(t));
+
+        let norm = intersect_at.sub(&self.center).normalize();
+
+        Some((t, norm))
     }
 }

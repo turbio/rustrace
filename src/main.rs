@@ -31,26 +31,36 @@ fn trace(scene: &Scene, ray: &Ray, screen: &mut Screen) -> Color {
         b: 0.0f64,
     };
 
-    let mut smallest: Option<f64> = None;
+    let mut closest: Option<(f64, Vec2)> = None;
     for obj in scene.objects {
-        let i = obj.intersect(ray);
+        let inter = obj.intersect(ray);
 
-        match (i, smallest) {
+        match (inter, closest.clone()) {
             (Some(pos), Some(sml)) => {
-                if pos < sml {
+                if pos.0 < sml.0 {
                     col = obj.material().color;
-                    smallest = Some(pos);
+                    closest = Some(pos);
                 }
             }
             (Some(pos), None) => {
                 col = obj.material().color;
-                smallest = Some(pos);
+                closest = Some(pos);
             }
             (None, _) => (),
         };
     }
 
     screen.put_screen(&ray.render().as_color(&col));
+
+    if closest.is_some() {
+        let closest = closest.unwrap();
+        let intersect_at = ray.point.add(&ray.direction.scale(closest.0));
+        let r = Ray {
+            point: intersect_at,
+            direction: closest.1,
+        };
+        screen.put_screen(&r.render());
+    }
 
     col
 }

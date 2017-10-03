@@ -56,6 +56,15 @@ impl Vec2 {
         (self.x.powi(2) + self.y.powi(2)).sqrt()
     }
 
+    pub fn normalize(&self) -> Vec2 {
+        let mag = self.dot(self).sqrt();
+
+        Vec2 {
+            x: self.x / mag,
+            y: self.y / mag,
+        }
+    }
+
     //fn mult(&self, v: Vec2) -> Vec2 {
     //Vec2 {
     //x: self.x * v.x,
