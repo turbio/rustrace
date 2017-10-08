@@ -3,7 +3,7 @@ use std::f64;
 use vec2::Vec2;
 use ray::Ray;
 use screen::{Screen, Drawable};
-use trace::Trace;
+use trace::{Trace, Intersection};
 use material::Material;
 
 pub struct Circle {
@@ -28,7 +28,7 @@ impl Drawable for Circle {
         let mut x = 0;
         let mut y = r;
 
-        let c = self.material.color.rgb();
+        let c = self.material.ambient.rgb();
 
         while y >= x {
             target.put(xc + x, yc + y, c);
@@ -59,7 +59,7 @@ impl Trace for Circle {
         self.material.clone()
     }
 
-    fn intersect(&self, ray: &Ray) -> Option<(f64, Vec2)> {
+    fn intersect(&self, ray: &Ray) -> Option<Intersection> {
         let ray_to_self = ray.point.sub(&self.center);
 
         let a = ray.direction.len().powi(2);
@@ -76,16 +76,20 @@ impl Trace for Circle {
         let t1 = (-b + (b.powi(2) - 4.0f64 * a * c).sqrt()) / (2.0f64 * a);
         let t2 = (-b - (b.powi(2) - 4.0f64 * a * c).sqrt()) / (2.0f64 * a);
 
-        let t = t1.min(t2);
+        let distance = t1.min(t2);
 
-        if t < 0.0f64 {
+        if distance < 0.0f64 {
             return None;
         }
 
-        let intersect_at = ray.point.add(&ray.direction.scale(t));
+        let intersect_at = ray.point.add(&ray.direction.scale(distance));
 
-        let norm = intersect_at.sub(&self.center).normalize();
+        let normal = intersect_at.sub(&self.center).normalize();
 
-        Some((t, norm))
+        Some(Intersection {
+            distance,
+            normal,
+            object: self,
+        })
     }
 }

@@ -12,8 +12,8 @@ pub struct Screen {
 
 impl Screen {
     pub fn new() -> Screen {
-        let w = 600;
-        let h = 600;
+        let w = 800;
+        let h = 800;
 
         let screen = Screen {
             image: ImageBuffer::<Rgba<u8>, Vec<u8>>::new(w, h),

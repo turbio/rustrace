@@ -7,6 +7,7 @@ mod color;
 mod trace;
 mod screen;
 mod material;
+mod light;
 
 use screen::{Screen, Drawable};
 use material::Material;
@@ -16,12 +17,33 @@ use imageplane::ImagePlane;
 use cam::Cam;
 use ray::Ray;
 use circle::Circle;
-use trace::Trace;
+use trace::{Trace, Intersection};
+use light::Light;
 
 struct Scene<'a> {
     objects: &'a Vec<&'a Trace>,
     image_plane: &'a ImagePlane,
     cam: &'a Cam,
+    lights: &'a Vec<&'a Light>,
+    ambient: &'a Color,
+}
+
+fn occluded(scene: &Scene, shadow_ray: &Ray) -> bool {
+    for obj2 in scene.objects {
+        let inter = obj2.intersect(shadow_ray);
+
+        if inter.is_none() {
+            continue;
+        }
+
+        let inter = inter.unwrap();
+
+        if inter.distance > 0.0f64 && inter.distance < 1.0f64 {
+            return true;
+        }
+    }
+
+    false
 }
 
 fn trace(scene: &Scene, ray: &Ray, screen: &mut Screen) -> Color {
@@ -31,45 +53,120 @@ fn trace(scene: &Scene, ray: &Ray, screen: &mut Screen) -> Color {
         b: 0.0f64,
     };
 
-    let mut closest: Option<(f64, Vec2)> = None;
+    let mut intersection: Option<Intersection> = None;
+
     for obj in scene.objects {
         let inter = obj.intersect(ray);
 
-        match (inter, closest.clone()) {
+        match (inter, intersection.clone()) {
             (Some(pos), Some(sml)) => {
-                if pos.0 < sml.0 {
-                    col = obj.material().color;
-                    closest = Some(pos);
+                if pos.distance < sml.distance {
+                    col = obj.material().ambient.mult(scene.ambient);
+                    intersection = Some(pos);
                 }
             }
             (Some(pos), None) => {
-                col = obj.material().color;
-                closest = Some(pos);
+                col = obj.material().ambient.mult(scene.ambient);
+                intersection = Some(pos);
             }
-            (None, _) => (),
+            (_, _) => (),
         };
     }
+
+    if intersection.is_none() {
+        return col;
+    }
+
+    let intersection = intersection.unwrap();
+
+    let intersect_at = ray.point.add(&ray.direction.scale(intersection.distance));
+
+    let (p_x, p_y) = screen.project(&intersect_at);
+    let (d_x, d_y) = screen.project(&intersection.normal.scale(0.02f64).add(&intersect_at));
+
+    screen.put_line(p_x, p_y, d_x, d_y, col.rgb());
+
+    for light in scene.lights {
+        let light_vec = light.position.sub(&intersect_at).normalize();
+        let light_dot = light_vec.dot(&intersection.normal);
+
+        if light_dot < 0.0f64 {
+            continue;
+        }
+
+        let shadow_ray = Ray {
+            point: intersect_at.clone(),
+            direction: light.position.sub(&intersect_at),
+        };
+
+        if occluded(&scene, &shadow_ray) {
+            screen.put_screen(&shadow_ray.render());
+            continue;
+        }
+
+        let diffuse = &intersection
+            .object
+            .material()
+            .diffuse
+            .mult(&light.diffuse)
+            .scale(light_dot);
+
+
+        let (d_x, d_y) = screen.project(&light_vec.scale(0.02f64).add(&intersect_at));
+        screen.put_line(p_x, p_y, d_x, d_y, diffuse.rgb());
+
+        col = col.add(diffuse);
+
+        let reflect_vec = intersection.normal.scale(2.0f64 * light_dot).sub(
+            &light_vec,
+        );
+
+        let view_vec = scene.cam.pos.sub(&intersect_at).normalize();
+
+        let reflec_view_dot = reflect_vec.dot(&view_vec);
+
+        let specular = light
+            .specular
+            .mult(&intersection.object.material().specular)
+            .scale(reflec_view_dot.powf(
+                intersection.object.material().shininess,
+            ));
+
+        col = col.add(&specular);
+    }
+
+    if intersection.object.material().reflectivity > 0.0f64 {
+        let v = ray.direction.scale(-1.0f64).normalize();
+        let reflect_vec = intersection
+            .normal
+            .scale(2.0f64 * v.dot(&intersection.normal))
+            .sub(&v);
+
+        let r = Ray {
+            point: intersect_at.add(&Vec2 {
+                x: 0.0001f64,
+                y: 0.0001f64,
+            }),
+            direction: reflect_vec,
+        };
+
+        col = col.add(&trace(scene, &r, screen).scale(
+            intersection
+                .object
+                .material()
+                .reflectivity,
+        ));
+    }
+
+    col = col.clamp();
 
     screen.put_screen(&ray.render().as_color(&col));
-
-    if closest.is_some() {
-        let closest = closest.unwrap();
-        let intersect_at = ray.point.add(&ray.direction.scale(closest.0));
-        let r = Ray {
-            point: intersect_at,
-            direction: closest.1,
-        };
-        screen.put_screen(&r.render());
-    }
 
     col
 }
 
 fn render(scene: &Scene, screen: &mut Screen) {
     screen.put_screen(&scene.cam.render());
-    for obj in scene.objects {
-        screen.put_screen(&obj.render());
-    }
 
     let mut rendered_plane = Box::new(scene.image_plane.clone());
 
@@ -82,35 +179,69 @@ fn render(scene: &Scene, screen: &mut Screen) {
         };
 
         let c = trace(scene, &ray, screen);
+
         rendered_plane.put(i, c);
+    }
+
+
+    for obj in scene.objects {
+        screen.put_screen(&obj.render());
+    }
+
+    for light in scene.lights {
+        screen.put_screen(&light.render());
     }
 
     screen.put_screen(&rendered_plane.render());
 }
 
 fn main() {
-    let a = &Circle {
+    let o1 = &Circle {
         material: Material {
-            color: Color {
+            ambient: Color {
                 r: 1.0f64,
                 g: 0.0f64,
                 b: 0.0f64,
             },
+            diffuse: Color {
+                r: 1.0f64,
+                g: 0.0f64,
+                b: 0.0f64,
+            },
+            specular: Color {
+                r: 0.0f64,
+                g: 0.0f64,
+                b: 0.0f64,
+            },
+            shininess: 0.0f64,
+            reflectivity: 0.3f64,
         },
         center: Vec2 {
-            x: 0.45f64,
-            y: 0.2f64,
+            x: 0.5f64,
+            y: 0.3f64,
         },
         radius: 0.08f64,
     };
 
-    let b = &Circle {
+    let o2 = &Circle {
         material: Material {
-            color: Color {
+            ambient: Color {
                 r: 0.0f64,
                 g: 1.0f64,
                 b: 0.0f64,
             },
+            diffuse: Color {
+                r: 0.0f64,
+                g: 1.0f64,
+                b: 0.0f64,
+            },
+            specular: Color {
+                r: 0.8f64,
+                g: 0.8f64,
+                b: 0.8f64,
+            },
+            shininess: 20.0f64,
+            reflectivity: 0.5f64,
         },
         center: Vec2 {
             x: 0.17f64,
@@ -119,13 +250,25 @@ fn main() {
         radius: 0.25f64,
     };
 
-    let c = &Circle {
+    let o3 = &Circle {
         material: Material {
-            color: Color {
+            ambient: Color {
                 r: 0.0f64,
                 g: 0.0f64,
                 b: 1.0f64,
             },
+            diffuse: Color {
+                r: 0.0f64,
+                g: 0.0f64,
+                b: 1.0f64,
+            },
+            specular: Color {
+                r: 0.0f64,
+                g: 0.0f64,
+                b: 0.0f64,
+            },
+            shininess: 0.0f64,
+            reflectivity: 0.0f64,
         },
         center: Vec2 {
             x: 0.75f64,
@@ -134,24 +277,47 @@ fn main() {
         radius: 0.09f64,
     };
 
+    let l1 = &Light {
+        position: Vec2 {
+            x: 0.7f64,
+            y: 0.6f64,
+        },
+        diffuse: Color {
+            r: 0.8f64,
+            g: 0.8f64,
+            b: 0.8f64,
+        },
+        specular: Color {
+            r: 0.8f64,
+            g: 0.8f64,
+            b: 0.8f64,
+        },
+    };
+
     let scene = Scene {
-        objects: &vec![a, b, c],
+        ambient: &Color {
+            r: 0.1f64,
+            g: 0.1f64,
+            b: 0.1f64,
+        },
+        objects: &vec![o1, o2, o3],
+        lights: &vec![l1],
         image_plane: &ImagePlane::new(
-            64,
+            128,
             Vec2 {
-                x: 0.02f64 as f64,
-                y: 0.5f64 as f64,
+                x: 0.01f64 as f64,
+                y: 0.8f64 as f64,
             },
 
             Vec2 {
-                x: 0.98f64 as f64,
-                y: 0.5f64 as f64,
+                x: 0.99f64 as f64,
+                y: 0.8f64 as f64,
             },
         ),
         cam: &Cam {
             pos: Vec2 {
                 x: 0.5f64,
-                y: 0.98f64,
+                y: 1.98f64,
             },
         },
     };
