@@ -20,7 +20,14 @@ use circle::Circle;
 use trace::{Trace, Intersection};
 use light::Light;
 
-struct Scene<'a> {
+use std::ffi::CString;
+use std::ffi::CStr;
+use std::os::raw::c_char;
+
+extern crate serde_json;
+use serde_json::{Value, Error};
+
+pub struct Scene<'a> {
     objects: &'a Vec<&'a Trace>,
     image_plane: &'a ImagePlane,
     cam: &'a Cam,
@@ -165,7 +172,7 @@ fn trace(scene: &Scene, ray: &Ray, screen: &mut Screen) -> Color {
     col
 }
 
-fn render(scene: &Scene, screen: &mut Screen) {
+pub fn render(scene: &Scene, screen: &mut Screen) {
     screen.put_screen(&scene.cam.render());
 
     let mut rendered_plane = Box::new(scene.image_plane.clone());
@@ -195,136 +202,24 @@ fn render(scene: &Scene, screen: &mut Screen) {
     screen.put_screen(&rendered_plane.render());
 }
 
-fn main() {
-    let o1 = &Circle {
-        material: Material {
-            ambient: Color {
-                r: 1.0f64,
-                g: 0.0f64,
-                b: 0.0f64,
-            },
-            diffuse: Color {
-                r: 1.0f64,
-                g: 0.0f64,
-                b: 0.0f64,
-            },
-            specular: Color {
-                r: 0.0f64,
-                g: 0.0f64,
-                b: 0.0f64,
-            },
-            shininess: 0.0f64,
-            reflectivity: 0.3f64,
-        },
-        center: Vec2 {
-            x: 0.5f64,
-            y: 0.3f64,
-        },
-        radius: 0.08f64,
-    };
-
-    let o2 = &Circle {
-        material: Material {
-            ambient: Color {
-                r: 0.0f64,
-                g: 1.0f64,
-                b: 0.0f64,
-            },
-            diffuse: Color {
-                r: 0.0f64,
-                g: 1.0f64,
-                b: 0.0f64,
-            },
-            specular: Color {
-                r: 0.8f64,
-                g: 0.8f64,
-                b: 0.8f64,
-            },
-            shininess: 20.0f64,
-            reflectivity: 0.5f64,
-        },
-        center: Vec2 {
-            x: 0.17f64,
-            y: 0.1f64,
-        },
-        radius: 0.25f64,
-    };
-
-    let o3 = &Circle {
-        material: Material {
-            ambient: Color {
-                r: 0.0f64,
-                g: 0.0f64,
-                b: 1.0f64,
-            },
-            diffuse: Color {
-                r: 0.0f64,
-                g: 0.0f64,
-                b: 1.0f64,
-            },
-            specular: Color {
-                r: 0.0f64,
-                g: 0.0f64,
-                b: 0.0f64,
-            },
-            shininess: 0.0f64,
-            reflectivity: 0.0f64,
-        },
-        center: Vec2 {
-            x: 0.75f64,
-            y: 0.3f64,
-        },
-        radius: 0.09f64,
-    };
-
-    let l1 = &Light {
-        position: Vec2 {
-            x: 0.7f64,
-            y: 0.6f64,
-        },
-        diffuse: Color {
-            r: 0.8f64,
-            g: 0.8f64,
-            b: 0.8f64,
-        },
-        specular: Color {
-            r: 0.8f64,
-            g: 0.8f64,
-            b: 0.8f64,
-        },
-    };
-
-    let scene = Scene {
-        ambient: &Color {
-            r: 0.1f64,
-            g: 0.1f64,
-            b: 0.1f64,
-        },
-        objects: &vec![o1, o2, o3],
-        lights: &vec![l1],
-        image_plane: &ImagePlane::new(
-            128,
-            Vec2 {
-                x: 0.01f64 as f64,
-                y: 0.8f64 as f64,
-            },
-
-            Vec2 {
-                x: 0.99f64 as f64,
-                y: 0.8f64 as f64,
-            },
-        ),
-        cam: &Cam {
-            pos: Vec2 {
-                x: 0.5f64,
-                y: 1.98f64,
-            },
-        },
-    };
-
-    let mut screen = Screen::new();
-
-    render(&scene, &mut screen);
-
-    screen.push("output.png");
+fn my_string_safe(i: *mut c_char) -> String {
+    unsafe { CStr::from_ptr(i).to_string_lossy().into_owned() }
 }
+
+#[no_mangle]
+pub unsafe fn render_serial_scene(s: *mut c_char) -> *const [u8] {
+    let data = my_string_safe(s);
+
+    let res: Value = serde_json::from_str(data.as_str()).unwrap();
+
+    println!("{}", res["objects"]);
+
+    let sparkle_heart = vec![1, 2, 3, 4];
+    let sparkle_heart = String::from_utf8(sparkle_heart).unwrap();
+
+    //CString::new(sparkle_heart.as_str()).unwrap().into_raw()
+
+    data.as_bytes().as_ptr()
+}
+
+fn main() {}
