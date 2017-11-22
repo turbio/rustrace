@@ -207,19 +207,146 @@ fn my_string_safe(i: *mut c_char) -> String {
 }
 
 #[no_mangle]
-pub unsafe fn render_serial_scene(s: *mut c_char) -> *const [u8] {
-    let data = my_string_safe(s);
+pub fn render_serial_scene(scene: *mut c_char, target: *mut u8, w: usize, h: usize) {
+    let scene = my_string_safe(scene);
 
-    let res: Value = serde_json::from_str(data.as_str()).unwrap();
+    let target: &mut [u8] = unsafe { std::slice::from_raw_parts_mut(target, w * h * 4) };
 
-    println!("{}", res["objects"]);
+    for i in 0..target.len() {
+        target[i] = 0;
+    }
 
-    let sparkle_heart = vec![1, 2, 3, 4];
-    let sparkle_heart = String::from_utf8(sparkle_heart).unwrap();
+    let mut screen = Screen::new();
 
-    //CString::new(sparkle_heart.as_str()).unwrap().into_raw()
+    let o1 = &Circle {
+        material: Material {
+            ambient: Color {
+                r: 1.0f64,
+                g: 0.0f64,
+                b: 0.0f64,
+            },
+            diffuse: Color {
+                r: 1.0f64,
+                g: 0.0f64,
+                b: 0.0f64,
+            },
+            specular: Color {
+                r: 0.0f64,
+                g: 0.0f64,
+                b: 0.0f64,
+            },
+            shininess: 0.0f64,
+            reflectivity: 0.3f64,
+        },
+        center: Vec2 {
+            x: 0.5f64,
+            y: 0.3f64,
+        },
+        radius: 0.08f64,
+    };
 
-    data.as_bytes().as_ptr()
+    let o2 = &Circle {
+        material: Material {
+            ambient: Color {
+                r: 0.0f64,
+                g: 1.0f64,
+                b: 0.0f64,
+            },
+            diffuse: Color {
+                r: 0.0f64,
+                g: 1.0f64,
+                b: 0.0f64,
+            },
+            specular: Color {
+                r: 0.8f64,
+                g: 0.8f64,
+                b: 0.8f64,
+            },
+            shininess: 20.0f64,
+            reflectivity: 0.5f64,
+        },
+        center: Vec2 {
+            x: 0.17f64,
+            y: 0.1f64,
+        },
+        radius: 0.25f64,
+    };
+
+    let o3 = &Circle {
+        material: Material {
+            ambient: Color {
+                r: 0.0f64,
+                g: 0.0f64,
+                b: 1.0f64,
+            },
+            diffuse: Color {
+                r: 0.0f64,
+                g: 0.0f64,
+                b: 1.0f64,
+            },
+            specular: Color {
+                r: 0.0f64,
+                g: 0.0f64,
+                b: 0.0f64,
+            },
+            shininess: 0.0f64,
+            reflectivity: 0.0f64,
+        },
+        center: Vec2 {
+            x: 0.75f64,
+            y: 0.3f64,
+        },
+        radius: 0.09f64,
+    };
+
+    let l1 = &Light {
+        position: Vec2 {
+            x: 0.7f64,
+            y: 0.6f64,
+        },
+        diffuse: Color {
+            r: 0.8f64,
+            g: 0.8f64,
+            b: 0.8f64,
+        },
+        specular: Color {
+            r: 0.8f64,
+            g: 0.8f64,
+            b: 0.8f64,
+        },
+    };
+
+    let scene = Scene {
+        ambient: &Color {
+            r: 0.1f64,
+            g: 0.1f64,
+            b: 0.1f64,
+        },
+        objects: &vec![o1, o2, o3],
+        lights: &vec![l1],
+        image_plane: &ImagePlane::new(
+            32,
+            Vec2 {
+                x: 0.01f64 as f64,
+                y: 0.6f64 as f64,
+            },
+
+            Vec2 {
+                x: 0.99f64 as f64,
+                y: 0.6f64 as f64,
+            },
+        ),
+        cam: &Cam {
+            pos: Vec2 {
+                x: 0.5f64,
+                y: 0.98f64,
+            },
+        },
+    };
+
+    render(&scene, &mut screen);
+
+    screen.push_to_arr(target).unwrap();
 }
 
 fn main() {}

@@ -12,8 +12,8 @@ pub struct Screen {
 
 impl Screen {
     pub fn new() -> Screen {
-        let w = 800;
-        let h = 800;
+        let w = 600;
+        let h = 600;
 
         let screen = Screen {
             image: ImageBuffer::<Rgba<u8>, Vec<u8>>::new(w, h),
@@ -24,8 +24,25 @@ impl Screen {
         screen
     }
 
-    pub fn push(&self, to: &str) {
+    pub fn push_to_file(&self, to: &str) {
         self.image.save(to).unwrap();
+    }
+
+    pub fn push_to_arr(&self, to: &mut [u8]) -> Result<(), &str> {
+        if to.len() != self.width as usize * self.height as usize * 4 {
+            return Err("screen size does not match array");
+        }
+
+        for (x, y, p) in self.image.enumerate_pixels() {
+            let at = ((x * 4) + (y * self.width * 4)) as usize;
+
+            to[at + 0] = p[0];
+            to[at + 1] = p[1];
+            to[at + 2] = p[2];
+            to[at + 3] = p[3];
+        }
+
+        Ok(())
     }
 
     pub fn project(&self, v: &Vec2) -> (isize, isize) {

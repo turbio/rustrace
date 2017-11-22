@@ -4,9 +4,21 @@
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width" />
 		<title>rustrace</title>
+		<style type="text/css">
+body {
+	font-family: "xos4 Terminus", monospace;
+}
+
+canvas {
+	border: solid black 1px;
+}
+		</style>
 	</head>
 	<body>
-		<canvas id="tutorial" width="150" height="150"></canvas>
+		<canvas id="canvas" width="600" height="600"></canvas>
+		<input id="rays" type="number" value="32" onchange="render()">
+		<input id="draw-misses" type="checkbox" onchange="render()">
+		<label for="draw-misses">draw ray misses</label>
 		<script src="build/bundle.js"></script>
 	</body>
 </html>
