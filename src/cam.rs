@@ -1,6 +1,7 @@
 use screen::{Screen, Drawable};
 use vec2::Vec2;
 
+#[derive(Deserialize)]
 pub struct Cam {
     pub pos: Vec2,
 }

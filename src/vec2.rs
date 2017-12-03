@@ -1,7 +1,7 @@
 use screen::{Screen, Drawable};
 use std::f64;
 
-#[derive(Clone)]
+#[derive(Clone, Deserialize)]
 pub struct Vec2 {
     pub x: f64,
     pub y: f64,

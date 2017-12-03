@@ -25,7 +25,12 @@ use std::ffi::CStr;
 use std::os::raw::c_char;
 
 extern crate serde_json;
-use serde_json::{Value, Error};
+extern crate serde;
+
+#[macro_use]
+extern crate serde_derive;
+
+use serde_json::{Error, Value, Number};
 
 pub struct Scene<'a> {
     objects: &'a Vec<&'a Trace>,
@@ -210,6 +215,13 @@ fn my_string_safe(i: *mut c_char) -> String {
 pub fn render_serial_scene(scene: *mut c_char, target: *mut u8, w: usize, h: usize) {
     let scene = my_string_safe(scene);
 
+    let scene: Value = serde_json::from_str(scene.as_str()).unwrap();
+
+    let rays = scene["rays"].as_u64().unwrap() as usize;
+
+    let cam = scene["cam"].clone();
+    let cam: Cam = serde_json::from_value(cam).unwrap();
+
     let target: &mut [u8] = unsafe { std::slice::from_raw_parts_mut(target, w * h * 4) };
 
     for i in 0..target.len() {
@@ -325,7 +337,7 @@ pub fn render_serial_scene(scene: *mut c_char, target: *mut u8, w: usize, h: usi
         objects: &vec![o1, o2, o3],
         lights: &vec![l1],
         image_plane: &ImagePlane::new(
-            32,
+            rays,
             Vec2 {
                 x: 0.01f64 as f64,
                 y: 0.6f64 as f64,
@@ -336,12 +348,7 @@ pub fn render_serial_scene(scene: *mut c_char, target: *mut u8, w: usize, h: usi
                 y: 0.6f64 as f64,
             },
         ),
-        cam: &Cam {
-            pos: Vec2 {
-                x: 0.5f64,
-                y: 0.98f64,
-            },
-        },
+        cam: &cam,
     };
 
     render(&scene, &mut screen);
