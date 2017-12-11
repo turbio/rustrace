@@ -33,10 +33,10 @@ extern crate serde_derive;
 use serde_json::{Error, Value, Number};
 
 pub struct Scene<'a> {
-    objects: &'a Vec<&'a Trace>,
+    objects: &'a Vec<Box<Trace>>,
     image_plane: &'a ImagePlane,
     cam: &'a Cam,
-    lights: &'a Vec<&'a Light>,
+    lights: &'a Vec<Light>,
     ambient: &'a Color,
 }
 
@@ -217,116 +217,35 @@ pub fn render_serial_scene(scene: *mut c_char, target: *mut u8, w: usize, h: usi
 
     let scene: Value = serde_json::from_str(scene.as_str()).unwrap();
 
-    let rays = scene["rays"].as_u64().unwrap() as usize;
-
     let cam = scene["cam"].clone();
     let cam: Cam = serde_json::from_value(cam).unwrap();
 
     let target: &mut [u8] = unsafe { std::slice::from_raw_parts_mut(target, w * h * 4) };
 
-    for i in 0..target.len() {
-        target[i] = 0;
-    }
+    let objects: Vec<Box<Trace>> = scene["objects"]
+        .as_array()
+        .unwrap()
+        .into_iter()
+        .filter_map(|obj| match obj["type"].as_str().unwrap() {
+            "circle" => Some(Box::new(
+                serde_json::from_value::<Circle>(obj.clone()).unwrap(),
+            ) as Box<Trace>),
+            _ => None,
+        })
+        .collect();
 
-    let mut screen = Screen::new();
+    let lights: Vec<Light> = scene["lights"]
+        .as_array()
+        .unwrap()
+        .into_iter()
+        .map(|obj| serde_json::from_value::<Light>(obj.clone()).unwrap())
+        .collect();
 
-    let o1 = &Circle {
-        material: Material {
-            ambient: Color {
-                r: 1.0f64,
-                g: 0.0f64,
-                b: 0.0f64,
-            },
-            diffuse: Color {
-                r: 1.0f64,
-                g: 0.0f64,
-                b: 0.0f64,
-            },
-            specular: Color {
-                r: 0.0f64,
-                g: 0.0f64,
-                b: 0.0f64,
-            },
-            shininess: 0.0f64,
-            reflectivity: 0.3f64,
-        },
-        center: Vec2 {
-            x: 0.5f64,
-            y: 0.3f64,
-        },
-        radius: 0.08f64,
-    };
-
-    let o2 = &Circle {
-        material: Material {
-            ambient: Color {
-                r: 0.0f64,
-                g: 1.0f64,
-                b: 0.0f64,
-            },
-            diffuse: Color {
-                r: 0.0f64,
-                g: 1.0f64,
-                b: 0.0f64,
-            },
-            specular: Color {
-                r: 0.8f64,
-                g: 0.8f64,
-                b: 0.8f64,
-            },
-            shininess: 20.0f64,
-            reflectivity: 0.5f64,
-        },
-        center: Vec2 {
-            x: 0.17f64,
-            y: 0.1f64,
-        },
-        radius: 0.25f64,
-    };
-
-    let o3 = &Circle {
-        material: Material {
-            ambient: Color {
-                r: 0.0f64,
-                g: 0.0f64,
-                b: 1.0f64,
-            },
-            diffuse: Color {
-                r: 0.0f64,
-                g: 0.0f64,
-                b: 1.0f64,
-            },
-            specular: Color {
-                r: 0.0f64,
-                g: 0.0f64,
-                b: 0.0f64,
-            },
-            shininess: 0.0f64,
-            reflectivity: 0.0f64,
-        },
-        center: Vec2 {
-            x: 0.75f64,
-            y: 0.3f64,
-        },
-        radius: 0.09f64,
-    };
-
-    let l1 = &Light {
-        position: Vec2 {
-            x: 0.7f64,
-            y: 0.6f64,
-        },
-        diffuse: Color {
-            r: 0.8f64,
-            g: 0.8f64,
-            b: 0.8f64,
-        },
-        specular: Color {
-            r: 0.8f64,
-            g: 0.8f64,
-            b: 0.8f64,
-        },
-    };
+    let image_plane = scene["image_plane"].as_object().unwrap();
+    let rays = image_plane["rays"].as_u64().unwrap() as usize;
+    let x1 = serde_json::from_value::<Vec2>(image_plane["x1"].clone()).unwrap();
+    let x2 = serde_json::from_value::<Vec2>(image_plane["x2"].clone()).unwrap();
+    let image_plane = ImagePlane::new(rays, x1, x2);
 
     let scene = Scene {
         ambient: &Color {
@@ -334,25 +253,14 @@ pub fn render_serial_scene(scene: *mut c_char, target: *mut u8, w: usize, h: usi
             g: 0.1f64,
             b: 0.1f64,
         },
-        objects: &vec![o1, o2, o3],
-        lights: &vec![l1],
-        image_plane: &ImagePlane::new(
-            rays,
-            Vec2 {
-                x: 0.01f64 as f64,
-                y: 0.6f64 as f64,
-            },
-
-            Vec2 {
-                x: 0.99f64 as f64,
-                y: 0.6f64 as f64,
-            },
-        ),
+        objects: &objects,
+        lights: &lights,
+        image_plane: &image_plane,
         cam: &cam,
     };
 
+    let mut screen = Screen::new();
     render(&scene, &mut screen);
-
     screen.push_to_arr(target).unwrap();
 }
 

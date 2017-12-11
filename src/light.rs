@@ -4,6 +4,7 @@ use circle::Circle;
 use material::Material;
 use screen::{Drawable, Screen};
 
+#[derive(Deserialize)]
 pub struct Light {
     pub position: Vec2,
     pub diffuse: Color,
@@ -17,14 +18,14 @@ impl Drawable for Light {
         let m = Material {
             ambient: self.diffuse.clone(),
             diffuse: Color {
-                r: 1.0f64,
-                g: 1.0f64,
-                b: 1.0f64,
+                r: 0.0f64,
+                g: 0.0f64,
+                b: 0.0f64,
             },
             specular: Color {
-                r: 1.0f64,
-                g: 1.0f64,
-                b: 1.0f64,
+                r: 0.0f64,
+                g: 0.0f64,
+                b: 0.0f64,
             },
             shininess: 0.0f64,
             reflectivity: 0.0f64,

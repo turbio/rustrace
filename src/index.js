@@ -24,7 +24,7 @@ const scene = {
         ambient: { r: 1, g: 0, b: 0 },
         diffuse: { r: 1, g: 0, b: 0 },
         specular: { r: 0, g: 0, b: 0 },
-        shininess: 0,
+        shininess: 200,
         reflectivity: 0.3,
       },
     },
@@ -36,8 +36,8 @@ const scene = {
         ambient: { r: 0, g: 1, b: 0 },
         diffuse: { r: 0, g: 1, b: 0 },
         specular: { r: 0.8, g: 0.8, b: 0.8 },
-        shininess: 20,
-        reflectivity: 0.5,
+        shininess: 200,
+        reflectivity: 1,
       },
     },
     {
@@ -49,8 +49,15 @@ const scene = {
         diffuse: { r: 0, g: 0, b: 1 },
         specular: { r: 0, g: 0, b: 0 },
         shininess: 0,
-        reflectivity: 0,
+        reflectivity: 200,
       },
+    },
+  ],
+  lights: [
+    {
+      position: { x: 0.7, y: 0.5 },
+      diffuse: { r: 0.8, g: 0.8, b: 0.8 },
+      specular: { r: 0.8, g: 0.8, b: 0.8 },
     },
   ],
   cam: {
@@ -59,7 +66,11 @@ const scene = {
       y: 0.98,
     },
   },
-  rays: 32,
+  image_plane: {
+    rays: 32,
+    x1: { x: 0.01, y: 0.6 },
+    x2: { x: 0.99, y: 0.6 },
+  },
 };
 
 const ctx = canvas.getContext('2d');
@@ -78,11 +89,15 @@ const startDrag = e => {
 
   const { x, y } = realPos(e);
 
-  if (
-    Math.abs(x - scene.cam.pos.x) < 0.025 &&
-    Math.abs(y - scene.cam.pos.y) < 0.025
-  ) {
-    obj = scene.cam.pos;
+  const targets = []
+    .concat(scene.objects.map(o => o.center))
+    .concat(scene.lights.map(l => l.position))
+    .concat([scene.cam.pos, scene.image_plane.x1, scene.image_plane.x2]);
+
+  for (const so of targets) {
+    if (Math.abs(x - so.x) < 0.025 && Math.abs(y - so.y) < 0.025) {
+      obj = so;
+    }
   }
 
   if (!obj) {
@@ -108,7 +123,8 @@ const startDrag = e => {
 };
 
 const getScene = () => {
-  scene.rays = parseInt(document.getElementById('rays').value, 10) || 1;
+  scene.image_plane.rays =
+    parseInt(document.getElementById('rays').value, 10) || 1;
 
   return scene;
 };

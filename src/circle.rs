@@ -6,6 +6,7 @@ use screen::{Screen, Drawable};
 use trace::{Trace, Intersection};
 use material::Material;
 
+#[derive(Clone, Deserialize)]
 pub struct Circle {
     pub center: Vec2,
     pub radius: f64,

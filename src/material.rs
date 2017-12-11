@@ -1,6 +1,6 @@
 use color::Color;
 
-#[derive(Clone)]
+#[derive(Clone, Deserialize)]
 pub struct Material {
     pub ambient: Color,
     pub diffuse: Color,

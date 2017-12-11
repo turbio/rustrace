@@ -1,4 +1,4 @@
-#[derive(Clone)]
+#[derive(Clone, Deserialize)]
 pub struct Color {
     pub r: f64,
     pub g: f64,
