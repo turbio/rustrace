@@ -5,8 +5,13 @@
 		<meta name="viewport" content="width=device-width" />
 		<title>rustrace</title>
 		<style type="text/css">
+* {
+	font-family: monospace;
+}
+
 body {
-	font-family: "xos4 Terminus", monospace;
+	display: flex;
+	align-items: flex-start;
 }
 
 canvas {
@@ -18,13 +23,22 @@ canvas {
 		linear-gradient(45deg, #eee 25%, transparent 25%, transparent 75%, #eee 75%, #eee),
 		linear-gradient(45deg, #eee 25%, transparent 25%, transparent 75%, #eee 75%, #eee);
 }
+
+.option-container {
+	padding-left: .25em;
+	margin-left: 1em;
+	border-left: solid black 1px;
+}
+
+input {
+	border: none;
+	font-size: .5em;
+	width: 3em;
+}
 		</style>
 	</head>
 	<body>
 		<canvas id="canvas" width="600" height="600"></canvas>
-		<input id="rays" type="number" value="32" onchange="render()">
-		<input id="draw-misses" type="checkbox" onchange="render()">
-		<label for="draw-misses">draw ray misses</label>
 		<script src="build/bundle.js"></script>
 	</body>
 </html>
